@@ -3,10 +3,44 @@ version: 2.1
 orbs:
     cloudrun: circleci/gcp-cloud-run@1.0.2
 
-jobs:
-    build_and_deploy:
+executors:
+    go-executor:
+        working_directory: ~/app
+        docker:
+            - image: circleci/golang:1.13
+        resource_class: small
+    gcloud-executor:
+        working_directory: ~/app
         docker:
             - image: "cimg/base:stable"
+        resource_class: small
+
+jobs:
+    go_lint:
+        executor: go-executor
+        steps:
+            - checkout
+            - restore_cache:
+                  keys:
+                      - 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
+            - run:
+                  name: download go modules
+                  command: go mod download
+                  working_directory: app
+            - save_cache:
+                  key: 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
+                  paths:
+                      - /go/pkg/mod
+            - run:
+                  name: Install GolangCI-Lint
+                  command: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.26.0
+            - run:
+                  name: Run GolangCI-Lint
+                  command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
+                  working_directory: app
+
+    build_and_deploy:
+        executor: gcloud-executor
         steps:
             - checkout
             - cloudrun/init
@@ -40,4 +74,7 @@ jobs:
 workflows:
     build_and_deploy_to_managed_workflow:
         jobs:
-            - build_and_deploy
+            - go_lint
+            - build_and_deploy:
+                  requires:
+                      - go_lint
