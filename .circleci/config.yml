@@ -12,6 +12,7 @@ jobs:
             - cloudrun/init
             - cloudrun/build:
                   tag: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
+                  source: app
             - cloudrun/deploy:
                   image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
                   platform: managed
