@@ -2,8 +2,8 @@ package handler
 
 import (
 	"context"
-	"server/gen/api"
 	"math/rand"
+	"server/gen/api"
 	"sync"
 	"time"
 
