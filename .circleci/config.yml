@@ -16,7 +16,7 @@ executors:
         resource_class: small
 
 jobs:
-    go_lint:
+    lint:
         executor: go-executor
         parameters:
             cache_key:
@@ -46,7 +46,7 @@ jobs:
                   command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
                   working_directory: << parameters.working_dir >>
 
-    build_and_deploy:
+    build-and-deploy:
         executor: gcloud-executor
         parameters:
             working_dir:
@@ -84,21 +84,25 @@ jobs:
 workflows:
     server:
         jobs:
-            - go_lint:
+            - lint:
+                  name: lint-server
                   working_dir: server
                   cache_key: go-mod-server-{{ .Environment.CACHE_KEY }}-{{ checksum "server/go.mod" }}
                   cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
-            - build_and_deploy:
+            - build-and-deploy:
+                  name: deploy-server
                   working_dir: server
                   requires:
-                      - go_lint
+                      - lint-server
     gateway:
         jobs:
-            - go_lint:
+            - lint:
+                  name: lint-gateway
                   working_dir: gateway
                   cache_key: go-mod-gateway-{{ .Environment.CACHE_KEY }}-{{ checksum "gateway/go.mod" }}
                   cache_version: go-mod-gateway-{{ .Environment.CACHE_KEY }}
-            - build_and_deploy:
+            - build-and-deploy:
+                  name: deploy-gateway
                   working_dir: gateway
                   requires:
-                      - go_lint
+                      - lint-gateway
