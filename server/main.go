@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"server/gen/api"
 	"server/handler"
 
@@ -11,10 +12,12 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-const port = 50051
-
 func main() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "50051"
+	}
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
