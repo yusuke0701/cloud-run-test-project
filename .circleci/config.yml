@@ -18,6 +18,13 @@ executors:
 jobs:
     go_lint:
         executor: go-executor
+        parameters:
+            cache_key:
+                type: string
+            cache_version:
+                type: string
+            working_dir:
+                type: string
         steps:
             - checkout
             - restore_cache:
@@ -26,7 +33,7 @@ jobs:
             - run:
                   name: download go modules
                   command: go mod download
-                  working_directory: server
+                  working_directory: << parameters.working_dir >>
             - save_cache:
                   key: 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
                   paths:
@@ -37,16 +44,19 @@ jobs:
             - run:
                   name: Run GolangCI-Lint
                   command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
-                  working_directory: server
+                  working_directory: << parameters.working_dir >>
 
     build_and_deploy:
         executor: gcloud-executor
+        parameters:
+            working_dir:
+                type: string
         steps:
             - checkout
             - cloudrun/init
             - cloudrun/build:
                   tag: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
-                  source: server
+                  source: << parameters.working_dir >>
             - cloudrun/deploy:
                   image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
                   platform: managed
@@ -72,9 +82,23 @@ jobs:
                   name: Test managed deployed service.
 
 workflows:
-    build_and_deploy_to_managed_workflow:
+    server:
         jobs:
-            - go_lint
+            - go_lint:
+                  working_dir: server
+                  cache_key: go-mod-server-{{ .Environment.CACHE_KEY }}-{{ checksum "server/go.mod" }}
+                  cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
             - build_and_deploy:
+                  working_dir: server
+                  requires:
+                      - go_lint
+    gateway:
+        jobs:
+            - go_lint:
+                  working_dir: gateway
+                  cache_key: go-mod-gateway-{{ .Environment.CACHE_KEY }}-{{ checksum "gateway/go.mod" }}
+                  cache_version: go-mod-gateway-{{ .Environment.CACHE_KEY }}
+            - build_and_deploy:
+                  working_dir: gateway
                   requires:
                       - go_lint

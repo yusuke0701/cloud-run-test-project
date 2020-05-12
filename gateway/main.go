@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gateway/gen/api"
 	"net/http"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -12,11 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	port = 50050
-
-	endpoint = "localhost:50051"
-)
+const endpoint = "https://sample-5dnafyaz7q-ue.a.run.app/"
 
 func main() {
 	flag.Parse()
@@ -39,5 +36,9 @@ func run() error {
 		return err
 	}
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "50050"
+	}
+	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
