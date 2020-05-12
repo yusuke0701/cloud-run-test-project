@@ -29,13 +29,14 @@ jobs:
             - checkout
             - restore_cache:
                   keys:
-                      - 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
+                      - << parameters.cache_key >>
+                      - << parameters.cache_version >>
             - run:
                   name: download go modules
                   command: go mod download
                   working_directory: << parameters.working_dir >>
             - save_cache:
-                  key: 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
+                  key: << parameters.cache_key >>
                   paths:
                       - /go/pkg/mod
             - run:
