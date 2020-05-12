@@ -6,6 +6,6 @@ cd `dirname $0`
 : $1
 : $2
 
-cd ./../app
+cd ../
 gcloud builds submit --tag gcr.io/$1/$2
 gcloud run deploy --image gcr.io/$1/$2 --platform managed
