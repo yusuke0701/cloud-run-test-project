@@ -26,7 +26,7 @@ jobs:
             - run:
                   name: download go modules
                   command: go mod download
-                  working_directory: app
+                  working_directory: server
             - save_cache:
                   key: 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
                   paths:
@@ -37,7 +37,7 @@ jobs:
             - run:
                   name: Run GolangCI-Lint
                   command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
-                  working_directory: app
+                  working_directory: server
 
     build_and_deploy:
         executor: gcloud-executor
@@ -46,7 +46,7 @@ jobs:
             - cloudrun/init
             - cloudrun/build:
                   tag: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
-                  source: app
+                  source: server
             - cloudrun/deploy:
                   image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
                   platform: managed
