@@ -16,19 +16,27 @@ executors:
         resource_class: small
 
 jobs:
-    go_lint:
+    lint:
         executor: go-executor
+        parameters:
+            cache_key:
+                type: string
+            cache_version:
+                type: string
+            working_dir:
+                type: string
         steps:
             - checkout
             - restore_cache:
                   keys:
-                      - 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
+                      - << parameters.cache_key >>
+                      - << parameters.cache_version >>
             - run:
                   name: download go modules
                   command: go mod download
-                  working_directory: app
+                  working_directory: << parameters.working_dir >>
             - save_cache:
-                  key: 'go-mod-{{ .Environment.CACHE_KEY }}-{{ checksum "app/go.mod" }}'
+                  key: << parameters.cache_key >>
                   paths:
                       - /go/pkg/mod
             - run:
@@ -37,21 +45,26 @@ jobs:
             - run:
                   name: Run GolangCI-Lint
                   command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
-                  working_directory: app
+                  working_directory: << parameters.working_dir >>
 
-    build_and_deploy:
+    build-and-deploy:
         executor: gcloud-executor
+        parameters:
+            working_dir:
+                type: string
+            service_name:
+                type: string
         steps:
             - checkout
             - cloudrun/init
             - cloudrun/build:
                   tag: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
-                  source: app
+                  source: << parameters.working_dir >>
             - cloudrun/deploy:
                   image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
                   platform: managed
                   region: us-east1
-                  service-name: sample
+                  service-name: << parameters.service_name >>
                   unauthenticated: true
             - run:
                   command: >
@@ -72,9 +85,29 @@ jobs:
                   name: Test managed deployed service.
 
 workflows:
-    build_and_deploy_to_managed_workflow:
+    server:
         jobs:
-            - go_lint
-            - build_and_deploy:
+            - lint:
+                  name: lint-server
+                  working_dir: server
+                  cache_key: go-mod-server-{{ .Environment.CACHE_KEY }}-{{ checksum "server/go.mod" }}
+                  cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
+            - build-and-deploy:
+                  name: deploy-server
+                  working_dir: server
+                  service_name: server
                   requires:
-                      - go_lint
+                      - lint-server
+    gateway:
+        jobs:
+            - lint:
+                  name: lint-gateway
+                  working_dir: gateway
+                  cache_key: go-mod-gateway-{{ .Environment.CACHE_KEY }}-{{ checksum "gateway/go.mod" }}
+                  cache_version: go-mod-gateway-{{ .Environment.CACHE_KEY }}
+            - build-and-deploy:
+                  name: deploy-gateway
+                  working_dir: gateway
+                  service_name: gateway
+                  requires:
+                      - lint-gateway

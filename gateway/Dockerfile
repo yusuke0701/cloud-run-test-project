@@ -28,4 +28,3 @@ COPY --from=builder /app/server /server
 
 # Run the web service on container startup.
 CMD ["/server"]
-    
