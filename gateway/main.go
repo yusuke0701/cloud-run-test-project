@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const endpoint = "https://sample-5dnafyaz7q-ue.a.run.app/"
+const endpoint = "https://server-5dnafyaz7q-ue.a.run.app"
 
 func main() {
 	flag.Parse()

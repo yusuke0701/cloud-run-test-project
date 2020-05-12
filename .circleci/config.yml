@@ -51,6 +51,8 @@ jobs:
         parameters:
             working_dir:
                 type: string
+            service_name:
+                type: string
         steps:
             - checkout
             - cloudrun/init
@@ -61,7 +63,7 @@ jobs:
                   image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
                   platform: managed
                   region: us-east1
-                  service-name: sample
+                  service-name: << parameters.service_name >>
                   unauthenticated: true
             - run:
                   command: >
@@ -92,6 +94,7 @@ workflows:
             - build-and-deploy:
                   name: deploy-server
                   working_dir: server
+                  service_name: server
                   requires:
                       - lint-server
     gateway:
@@ -104,5 +107,6 @@ workflows:
             - build-and-deploy:
                   name: deploy-gateway
                   working_dir: gateway
+                  service_name: gateway
                   requires:
                       - lint-gateway
