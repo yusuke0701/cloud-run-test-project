@@ -98,29 +98,3 @@ workflows:
                   service_name: grpc-gateway
                   requires:
                       - lint-grpc-gateway
-    server:
-        jobs:
-            - lint:
-                  name: lint-server
-                  working_dir: server
-                  cache_key: go-mod-server-{{ .Environment.CACHE_KEY }}-{{ checksum "server/go.mod" }}
-                  cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
-            - build-and-deploy:
-                  name: deploy-server
-                  working_dir: server
-                  service_name: server
-                  requires:
-                      - lint-server
-    gateway:
-        jobs:
-            - lint:
-                  name: lint-gateway
-                  working_dir: gateway
-                  cache_key: go-mod-gateway-{{ .Environment.CACHE_KEY }}-{{ checksum "gateway/go.mod" }}
-                  cache_version: go-mod-gateway-{{ .Environment.CACHE_KEY }}
-            - build-and-deploy:
-                  name: deploy-gateway
-                  working_dir: gateway
-                  service_name: gateway
-                  requires:
-                      - lint-gateway
