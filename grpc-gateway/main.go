@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"grpc-gateway/gen/api"
 	"grpc-gateway/handler"
 	"log"
@@ -14,13 +15,13 @@ import (
 )
 
 const (
-	portOfServer = "5000"
+	portOfServer = "8081"
 	endpoint     = "localhost:" + portOfServer
 )
 
 func main() {
-	go runServer()
 	go runGateway()
+	go runServer()
 }
 
 func runServer() {
@@ -45,7 +46,11 @@ func runServer() {
 	}
 }
 
-func runGateway() error {
+func runGateway() {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := api.RegisterPancakeBakerServiceHandlerFromEndpoint(ctx, mux, endpoint, opts)
