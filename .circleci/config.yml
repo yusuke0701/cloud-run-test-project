@@ -85,6 +85,19 @@ jobs:
                   name: Test managed deployed service.
 
 workflows:
+    grpc_gateway:
+        jobs:
+            - lint:
+                  name: lint-grpc-gateway
+                  working_dir: grpc-gateway
+                  cache_key: go-mod-grpc-gateway-{{ .Environment.CACHE_KEY }}-{{ checksum "grpc-gateway/go.mod" }}
+                  cache_version: go-mod-grpc-gateway-{{ .Environment.CACHE_KEY }}
+            - build-and-deploy:
+                  name: deploy-grpc-gateway
+                  working_dir: grpc-gateway
+                  service_name: grpc-gateway
+                  requires:
+                      - lint-grpc-gateway
     server:
         jobs:
             - lint:
