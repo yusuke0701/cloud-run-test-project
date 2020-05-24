@@ -54,21 +54,22 @@ jobs:
                 type: string
             service_name:
                 type: string
+            region:
+                type: string
         steps:
             - checkout
             - cloudrun/init
             - cloudrun/build:
                   tag: gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1}
                   source: << parameters.working_dir >>
-            - cloudrun/deploy:
-                  image: gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1}
-                  platform: managed
-                  region: us-east1
-                  service-name: << parameters.service_name >>
-                  unauthenticated: true
-                  args: --port=1234 \
-                        --timeout=600 \
-                        --no-traffic
+            - run:
+                name: deploy
+                command:  gcloud beta run deploy << parameters.service_name >> \
+                            --image gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1} \
+                            --region << parameters.region >> \
+                            --allow-unauthenticated \
+                            --platform managed \
+                            --no-traffic
 
 workflows:
     server:
@@ -82,6 +83,7 @@ workflows:
                   name: deploy-server
                   working_dir: server
                   service_name: server
+                  region: us-east1
                   requires:
                       - lint-server
     gateway:
@@ -95,5 +97,6 @@ workflows:
                   name: deploy-gateway
                   working_dir: gateway
                   service_name: gateway
+                  region: us-east1
                   requires:
                       - lint-gateway
