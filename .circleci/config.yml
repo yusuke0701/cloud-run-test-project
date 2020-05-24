@@ -66,6 +66,7 @@ jobs:
                   region: us-east1
                   service-name: << parameters.service_name >>
                   unauthenticated: true
+                  args: --service-account non-default@hoge-hoge-123456789.iam.gserviceaccount.com --no-traffic
             - run:
                   command: >
                       # A simple example of how a deployed managed service could be
