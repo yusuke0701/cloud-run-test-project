@@ -76,6 +76,9 @@ jobs:
                   tag: gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1}
                   source: << parameters.working_dir >>
             - run:
+                name: update
+                command: gcloud components update -y
+            - run:
                 name: deploy
                 command:  gcloud run deploy << parameters.service_name >> \
                             --image gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1} \
