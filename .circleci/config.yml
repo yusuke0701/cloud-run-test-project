@@ -9,6 +9,11 @@ executors:
         docker:
             - image: circleci/golang:1.13
         resource_class: small
+    gcloud:
+        working_directory: ~/app
+        docker:
+            - image: google/cloud-sdk:latest
+        resource_class: small
     gcloud-executor:
         working_directory: ~/app
         docker:
@@ -47,6 +52,14 @@ jobs:
                   command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
                   working_directory: << parameters.working_dir >>
 
+    cofirm:
+        executor: gcloud
+        steps:
+            - checkout
+            - run:
+                name: version
+                command: gcloud version 
+
     build-and-deploy:
         executor: gcloud-executor
         parameters:
@@ -79,6 +92,7 @@ workflows:
                   working_dir: server
                   cache_key: go-mod-server-{{ .Environment.CACHE_KEY }}-{{ checksum "server/go.mod" }}
                   cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
+            - cofirm
             - build-and-deploy:
                   name: deploy-server
                   working_dir: server
