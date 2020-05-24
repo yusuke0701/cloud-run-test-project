@@ -58,32 +58,17 @@ jobs:
             - checkout
             - cloudrun/init
             - cloudrun/build:
-                  tag: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
+                  tag: gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1}
                   source: << parameters.working_dir >>
             - cloudrun/deploy:
-                  image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
+                  image: gcr.io/${GOOGLE_PROJECT_ID}/<< parameters.service_name >>:${CIRCLE_SHA1}
                   platform: managed
                   region: us-east1
                   service-name: << parameters.service_name >>
                   unauthenticated: true
-                  args: --service-account non-default@hoge-hoge-123456789.iam.gserviceaccount.com --no-traffic
-            - run:
-                  command: >
-                      # A simple example of how a deployed managed service could be
-                      verified or further tested.
-
-                      # This step will send request our "API" and fail if there is
-                      unexpected output.
-
-                      GCP_API_RESULTS=$(curl -s "$GCP_DEPLOY_ENDPOINT")
-
-                      if [ "$GCP_API_RESULTS" != "Hello World!" ]; then
-                      echo "Result is unexpected"
-                      echo 'Result: '
-                      curl -s "$GCP_DEPLOY_ENDPOINT"
-                      exit 1;
-                      fi
-                  name: Test managed deployed service.
+                  args: --port=1234 \
+                        --timeout=600 \
+                        --no-traffic
 
 workflows:
     server:
