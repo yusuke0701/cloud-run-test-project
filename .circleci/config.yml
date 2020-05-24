@@ -77,7 +77,7 @@ jobs:
                   source: << parameters.working_dir >>
             - run:
                 name: update
-                command: gcloud components update -y
+                command: gcloud components update
             - run:
                 name: deploy
                 command:  gcloud run deploy << parameters.service_name >> \
