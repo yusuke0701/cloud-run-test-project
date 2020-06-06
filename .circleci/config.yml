@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-    cloudrun: circleci/gcp-cloud-run@1.0.2
+    gcp-cli: circleci/gcp-cli@1.8.3
 
 executors:
     go-executor:
@@ -12,7 +12,7 @@ executors:
     gcloud-executor:
         working_directory: ~/app
         docker:
-            - image: "cimg/base:stable"
+            - image: "google/cloud-sdk:latest"
         resource_class: small
 
 jobs:
@@ -54,35 +54,20 @@ jobs:
                 type: string
             service_name:
                 type: string
+            region:
+                type: string
         steps:
             - checkout
-            - cloudrun/init
-            - cloudrun/build:
-                  tag: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
-                  source: << parameters.working_dir >>
-            - cloudrun/deploy:
-                  image: "gcr.io/${GOOGLE_PROJECT_ID}/test-${CIRCLE_SHA1}"
-                  platform: managed
-                  region: us-east1
-                  service-name: << parameters.service_name >>
-                  unauthenticated: true
+            - gcp-cli/initialize:
+                  gcloud-service-key: GCLOUD_SERVICE_KEY
+                  google-compute-zone: GOOGLE_COMPUTE_ZONE
+                  google-project-id: GOOGLE_PROJECT_ID
             - run:
-                  command: >
-                      # A simple example of how a deployed managed service could be
-                      verified or further tested.
-
-                      # This step will send request our "API" and fail if there is
-                      unexpected output.
-
-                      GCP_API_RESULTS=$(curl -s "$GCP_DEPLOY_ENDPOINT")
-
-                      if [ "$GCP_API_RESULTS" != "Hello World!" ]; then
-                      echo "Result is unexpected"
-                      echo 'Result: '
-                      curl -s "$GCP_DEPLOY_ENDPOINT"
-                      exit 1;
-                      fi
-                  name: Test managed deployed service.
+                  name: build
+                  command: gcloud builds submit <<parameters.working_dir>> --tag gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
+            - run:
+                  name: deploy
+                  command: gcloud run deploy <<parameters.service_name>> --image gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1} --region <<parameters.region>> --allow-unauthenticated --platform managed
 
 workflows:
     server:
@@ -96,6 +81,7 @@ workflows:
                   name: deploy-server
                   working_dir: server
                   service_name: server
+                  region: us-east1
                   requires:
                       - lint-server
     gateway:
@@ -109,5 +95,6 @@ workflows:
                   name: deploy-gateway
                   working_dir: gateway
                   service_name: gateway
+                  region: us-east1
                   requires:
                       - lint-gateway
