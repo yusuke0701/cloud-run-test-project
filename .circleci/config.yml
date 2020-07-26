@@ -46,12 +46,36 @@ jobs:
                   name: Run GolangCI-Lint
                   command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
                   working_directory: << parameters.working_dir >>
-
-    build-and-deploy:
+    build-and-push:
         executor: gcloud-executor
         parameters:
             working_dir:
                 type: string
+            service_name:
+                type: string
+        steps:
+            - checkout
+            - gcp-cli/initialize:
+                  gcloud-service-key: GCLOUD_SERVICE_KEY
+                  google-compute-zone: GOOGLE_COMPUTE_ZONE
+                  google-project-id: GOOGLE_PROJECT_ID
+            - setup_remote_docker:
+                  docker_layer_caching: false # 使いたいが無料プランではtrueにできない
+            - attach_workspace:
+                  at: vendor
+            - run:
+                  name: build
+                  command: docker build . -t gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
+                  working_directory: << parameters.working_dir >>
+            - run:
+                  name: auth
+                  command: gcloud auth configure-docker
+            - run:
+                  name: push
+                  command: docker push gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
+    deploy:
+        executor: gcloud-executor
+        parameters:
             service_name:
                 type: string
             region:
@@ -62,9 +86,6 @@ jobs:
                   gcloud-service-key: GCLOUD_SERVICE_KEY
                   google-compute-zone: GOOGLE_COMPUTE_ZONE
                   google-project-id: GOOGLE_PROJECT_ID
-            - run:
-                  name: build
-                  command: gcloud builds submit <<parameters.working_dir>> --tag gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
             - run:
                   name: deploy
                   command: gcloud run deploy <<parameters.service_name>> --image gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1} --region <<parameters.region>> --allow-unauthenticated --platform managed
@@ -77,14 +98,20 @@ workflows:
                   working_dir: server
                   cache_key: go-mod-server-{{ .Environment.CACHE_KEY }}-{{ checksum "server/go.mod" }}
                   cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
-            - build-and-deploy:
-                  name: deploy-server
+            - build-and-push:
+                  name: build-and-push-server
                   context: gcp
                   working_dir: server
                   service_name: server
-                  region: us-east1
                   requires:
                       - lint-server
+            - deploy:
+                  name: deploy-server
+                  context: gcp
+                  service_name: server
+                  region: us-east1
+                  requires:
+                      - build-and-push-server
     gateway:
         jobs:
             - lint:
@@ -92,11 +119,17 @@ workflows:
                   working_dir: gateway
                   cache_key: go-mod-gateway-{{ .Environment.CACHE_KEY }}-{{ checksum "gateway/go.mod" }}
                   cache_version: go-mod-gateway-{{ .Environment.CACHE_KEY }}
-            - build-and-deploy:
-                  name: deploy-gateway
+            - build-and-push:
+                  name: build-and-push-gateway
                   context: gcp
                   working_dir: gateway
                   service_name: gateway
-                  region: us-east1
                   requires:
                       - lint-gateway
+            - deploy:
+                  name: deploy-gateway
+                  context: gcp
+                  service_name: gateway
+                  region: us-east1
+                  requires:
+                      - build-and-push-gateway
