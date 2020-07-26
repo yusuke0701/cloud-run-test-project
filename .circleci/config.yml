@@ -79,6 +79,7 @@ workflows:
                   cache_version: go-mod-server-{{ .Environment.CACHE_KEY }}
             - build-and-deploy:
                   name: deploy-server
+                  context: gcp
                   working_dir: server
                   service_name: server
                   region: us-east1
@@ -93,6 +94,7 @@ workflows:
                   cache_version: go-mod-gateway-{{ .Environment.CACHE_KEY }}
             - build-and-deploy:
                   name: deploy-gateway
+                  context: gcp
                   working_dir: gateway
                   service_name: gateway
                   region: us-east1
