@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd `dirname $0`
+cd $(dirname $0)
 
 go mod download
 go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
