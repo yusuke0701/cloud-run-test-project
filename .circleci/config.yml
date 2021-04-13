@@ -44,7 +44,7 @@ jobs:
                   command: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.26.0
             - run:
                   name: Run GolangCI-Lint
-                  command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck ./...
+                  command: golangci-lint run --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck --timeout=5m0s ./...
                   working_directory: << parameters.working_dir >>
     build-and-push:
         executor: gcloud-executor
