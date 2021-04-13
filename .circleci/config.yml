@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-    gcp-cli: circleci/gcp-cli@1.8.3
+    gcp-cli: circleci/gcp-cli@2.1.0
 
 executors:
     go-executor:
@@ -59,20 +59,12 @@ jobs:
                   gcloud-service-key: GCLOUD_SERVICE_KEY
                   google-compute-zone: GOOGLE_COMPUTE_ZONE
                   google-project-id: GOOGLE_PROJECT_ID
-            - setup_remote_docker:
-                  docker_layer_caching: false # 使いたいが無料プランではtrueにできない
             - attach_workspace:
                   at: vendor
             - run:
                   name: build
-                  command: docker build . -t gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
+                  command: gcloud alpha builds submit --pack image=gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
                   working_directory: << parameters.working_dir >>
-            - run:
-                  name: auth
-                  command: gcloud auth configure-docker
-            - run:
-                  name: push
-                  command: docker push gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
     deploy:
         executor: gcloud-executor
         parameters:
