@@ -63,7 +63,7 @@ jobs:
                   at: vendor
             - run:
                   name: build
-                  command: gcloud --verbosity=debug alpha builds submit --pack image=gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
+                  command: gcloud --verbosity=debug builds submit --pack image=gcr.io/${GOOGLE_PROJECT_ID}/<<parameters.service_name>>:${CIRCLE_SHA1}
                   working_directory: << parameters.working_dir >>
     deploy:
         executor: gcloud-executor
